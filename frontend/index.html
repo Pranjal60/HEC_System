@@ -1,0 +1,1599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hospital Emergency Coordination System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:       #0f1f3d;
+      --navy-mid:   #1a3260;
+      --navy-light: #243d7a;
+      --blue:       #2563eb;
+      --blue-hover: #1d4ed8;
+      --blue-light: #eff6ff;
+      --red:        #dc2626;
+      --red-light:  #fef2f2;
+      --green:      #16a34a;
+      --green-light:#f0fdf4;
+      --amber:      #d97706;
+      --amber-light:#fffbeb;
+      --purple:     #7c3aed;
+      --purple-light:#faf5ff;
+      --gray-50:    #f8fafc;
+      --gray-100:   #f1f5f9;
+      --gray-200:   #e2e8f0;
+      --gray-300:   #cbd5e1;
+      --gray-400:   #94a3b8;
+      --gray-500:   #64748b;
+      --gray-600:   #475569;
+      --gray-700:   #334155;
+      --gray-800:   #1e293b;
+      --gray-900:   #0f172a;
+      --sidebar-w:  240px;
+      --header-h:   60px;
+      --radius:     10px;
+      --shadow-sm:  0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+      --shadow:     0 4px 12px rgba(0,0,0,.08);
+      --shadow-lg:  0 10px 30px rgba(0,0,0,.12);
+    }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--gray-50); color: var(--gray-800); font-size: 14px; line-height: 1.5; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 10px; }
+
+    /* ── Loading bar ── */
+    #loading-bar { position:fixed; top:0; left:0; height:3px; background:linear-gradient(90deg,var(--blue),#60a5fa); z-index:9999; transition:width .3s ease; width:0; display:none; }
+
+    /* ── Toast ── */
+    #toast-container { position:fixed; bottom:24px; right:24px; z-index:9999; display:flex; flex-direction:column; gap:8px; }
+    .toast { padding:12px 16px; border-radius:10px; font-size:13.5px; font-weight:500; box-shadow:var(--shadow-lg); min-width:280px; max-width:360px; display:flex; align-items:flex-start; gap:10px; animation:toastIn .25s ease; }
+    .toast-icon { font-size:16px; flex-shrink:0; margin-top:1px; }
+    .toast-success { background:#fff; border-left:4px solid var(--green); color:var(--gray-800); }
+    .toast-error   { background:#fff; border-left:4px solid var(--red); color:var(--gray-800); }
+    .toast-info    { background:#fff; border-left:4px solid var(--blue); color:var(--gray-800); }
+    @keyframes toastIn { from { transform:translateX(30px); opacity:0; } to { transform:translateX(0); opacity:1; } }
+
+    /* ── Login ── */
+    #login-page { min-height:100vh; background:linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 50%,#1d4ed8 100%); display:flex; align-items:center; justify-content:center; padding:20px; }
+    .login-card { background:#fff; border-radius:20px; padding:40px; width:100%; max-width:420px; box-shadow:0 25px 60px rgba(0,0,0,.3); }
+    .login-logo { width:52px; height:52px; background:var(--blue); border-radius:14px; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; }
+    .login-card h1 { font-size:22px; font-weight:800; color:var(--gray-900); text-align:center; }
+    .login-card p { color:var(--gray-500); font-size:13px; text-align:center; margin-top:4px; }
+    #login-error { background:var(--red-light); border:1px solid #fca5a5; color:var(--red); padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:16px; display:none; }
+
+    /* ── App shell ── */
+    #app { display:none; min-height:100vh; }
+    .app-inner { display:flex; min-height:100vh; }
+
+    /* ── Sidebar ── */
+    #sidebar { width:var(--sidebar-w); background:var(--navy); min-height:100vh; position:fixed; top:0; left:0; bottom:0; z-index:50; display:flex; flex-direction:column; overflow-y:auto; }
+    .sidebar-logo { padding:18px 16px; border-bottom:1px solid rgba(255,255,255,.08); display:flex; align-items:center; gap:10px; }
+    .sidebar-logo-icon { width:36px; height:36px; background:var(--blue); border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .sidebar-logo-text { line-height:1.2; }
+    .sidebar-logo-text span:first-child { display:block; font-size:13px; font-weight:800; color:#fff; }
+    .sidebar-logo-text span:last-child  { display:block; font-size:10px; color:#93c5fd; }
+    .sidebar-nav { padding:10px; flex:1; }
+    .nav-section { color:#475569; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; padding:12px 8px 4px; }
+    .nav-item { display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; color:#93c5fd; font-size:13px; cursor:pointer; transition:all .15s; text-decoration:none; border:none; background:none; width:100%; text-align:left; }
+    .nav-item:hover { background:rgba(255,255,255,.08); color:#fff; }
+    .nav-item.active { background:var(--blue); color:#fff; font-weight:600; }
+    .nav-item svg { width:16px; height:16px; flex-shrink:0; }
+    .nav-badge { margin-left:auto; background:var(--red); color:#fff; font-size:10px; font-weight:700; padding:2px 6px; border-radius:10px; min-width:18px; text-align:center; }
+    .sidebar-footer { padding:12px; border-top:1px solid rgba(255,255,255,.08); }
+    .sidebar-user { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; background:rgba(255,255,255,.06); }
+    .user-avatar { width:30px; height:30px; background:var(--blue); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px; font-weight:700; flex-shrink:0; }
+    .user-info { min-width:0; flex:1; }
+    .user-name { color:#e2e8f0; font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .user-role { color:#64748b; font-size:11px; }
+    #logout-btn { width:100%; margin-top:6px; padding:8px; border-radius:8px; background:none; border:none; color:#64748b; font-size:12.5px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:all .15s; }
+    #logout-btn:hover { background:rgba(255,255,255,.06); color:#93c5fd; }
+
+    /* ── Main area ── */
+    #main-area { margin-left:var(--sidebar-w); flex:1; display:flex; flex-direction:column; min-height:100vh; }
+
+    /* ── Header ── */
+    #top-header { background:#fff; border-bottom:1px solid var(--gray-200); padding:0 24px; height:var(--header-h); display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:40; }
+    .header-left { display:flex; align-items:center; gap:12px; }
+    .header-left h2 { font-size:17px; font-weight:700; color:var(--gray-900); }
+    .header-subtitle { font-size:12px; color:var(--gray-400); background:var(--gray-100); padding:3px 10px; border-radius:20px; }
+    .header-right { display:flex; align-items:center; gap:8px; }
+
+    /* ── Page content ── */
+    #page-content { padding:24px; flex:1; }
+    .page { display:none; }
+    .page.active { display:block; }
+
+    /* ── Buttons ── */
+    .btn { display:inline-flex; align-items:center; gap:7px; padding:8px 16px; border-radius:8px; font-size:13.5px; font-weight:500; cursor:pointer; border:none; transition:all .15s; font-family:inherit; }
+    .btn:disabled { opacity:.5; cursor:not-allowed; }
+    .btn-primary   { background:var(--blue); color:#fff; }
+    .btn-primary:hover:not(:disabled)   { background:var(--blue-hover); }
+    .btn-secondary { background:var(--gray-100); color:var(--gray-700); }
+    .btn-secondary:hover:not(:disabled) { background:var(--gray-200); }
+    .btn-danger    { background:var(--red); color:#fff; }
+    .btn-danger:hover:not(:disabled)    { background:#b91c1c; }
+    .btn-success   { background:var(--green); color:#fff; }
+    .btn-success:hover:not(:disabled)   { background:#15803d; }
+    .btn-ghost     { background:none; color:var(--blue); padding:6px 10px; }
+    .btn-ghost:hover:not(:disabled)     { background:var(--blue-light); }
+    .btn-sm { padding:5px 12px; font-size:12.5px; }
+    .btn-xs { padding:4px 9px; font-size:11.5px; border-radius:6px; }
+    .spinner { animation:spin .8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* ── Inputs ── */
+    .inp { width:100%; border:1.5px solid var(--gray-200); border-radius:8px; padding:9px 12px; font-size:13.5px; outline:none; transition:border-color .15s; background:#fff; font-family:inherit; color:var(--gray-800); }
+    .inp:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(37,99,235,.1); }
+    .inp::placeholder { color:var(--gray-400); }
+    label.lbl { display:block; font-size:12px; font-weight:600; color:var(--gray-600); margin-bottom:5px; text-transform:uppercase; letter-spacing:.03em; }
+    .field-error { font-size:12px; color:var(--red); margin-top:4px; }
+    .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .form-grid .full { grid-column:1/-1; }
+    @media(max-width:640px){ .form-grid { grid-template-columns:1fr; } }
+
+    /* ── Cards ── */
+    .card { background:#fff; border-radius:var(--radius); border:1px solid var(--gray-200); padding:20px; }
+    .card-sm { padding:14px; }
+
+    /* ── Stat cards ── */
+    .stats-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:20px; }
+    @media(max-width:1100px){ .stats-grid { grid-template-columns:repeat(3,1fr); } }
+    .stat-card { background:#fff; border-radius:var(--radius); border:1px solid var(--gray-200); padding:18px; display:flex; align-items:center; gap:14px; cursor:pointer; transition:box-shadow .2s, border-color .2s; }
+    .stat-card:hover { box-shadow:var(--shadow); border-color:var(--blue); }
+    .stat-icon { width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .stat-info { min-width:0; }
+    .stat-value { font-size:28px; font-weight:800; line-height:1; }
+    .stat-label { font-size:12px; color:var(--gray-500); margin-top:3px; }
+
+    /* ── Table ── */
+    .tbl-wrap { overflow-x:auto; }
+    .tbl { width:100%; border-collapse:collapse; }
+    .tbl th { padding:10px 14px; text-align:left; font-size:11px; font-weight:700; color:var(--gray-500); text-transform:uppercase; letter-spacing:.05em; background:var(--gray-50); border-bottom:1px solid var(--gray-200); white-space:nowrap; }
+    .tbl td { padding:12px 14px; font-size:13.5px; color:var(--gray-700); border-bottom:1px solid var(--gray-100); vertical-align:middle; }
+    .tbl tr:last-child td { border-bottom:none; }
+    .tbl tr:hover td { background:var(--gray-50); }
+    .tbl-empty td { padding:40px; text-align:center; color:var(--gray-400); font-size:13px; }
+
+    /* ── Badges ── */
+    .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:11.5px; font-weight:600; white-space:nowrap; }
+    .badge-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+    /* severity */
+    .sev-critical { background:#fef2f2; color:#b91c1c; }
+    .sev-serious  { background:#fff7ed; color:#c2410c; }
+    .sev-moderate { background:#fffbeb; color:#92400e; }
+    .sev-minor    { background:#f0fdf4; color:#15803d; }
+    /* status */
+    .st-pending      { background:#eff6ff; color:#1e40af; }
+    .st-admitted     { background:#f0fdf4; color:#166534; }
+    .st-in_treatment { background:#fff7ed; color:#c2410c; }
+    .st-discharged   { background:#f0fdf4; color:#15803d; }
+    .st-cancelled    { background:var(--gray-100); color:var(--gray-500); }
+    .st-available    { background:#f0fdf4; color:#15803d; }
+    .st-in_transit   { background:var(--purple-light); color:var(--purple); }
+    .st-at_hospital  { background:#eff6ff; color:#1d4ed8; }
+    .st-maintenance  { background:#fef2f2; color:var(--red); }
+    .st-occupied     { background:#fff7ed; color:#c2410c; }
+    .st-not_available { background:#fff7ed; color:#c2410c; }
+    .st-active       { background:#f0fdf4; color:#15803d; }
+    .st-inactive     { background:var(--gray-100); color:var(--gray-500); }
+    .st-full         { background:#fef2f2; color:var(--red); }
+    .st-allocated    { background:#f0fdf4; color:#15803d; }
+    .st-waiting      { background:#fffbeb; color:#92400e; }
+    .st-denied       { background:#fef2f2; color:var(--red); }
+    .st-released     { background:var(--gray-100); color:var(--gray-500); }
+    .st-approved     { background:#f0fdf4; color:#15803d; }
+    .st-rejected     { background:#fef2f2; color:var(--red); }
+    .st-ongoing      { background:#fff7ed; color:#c2410c; }
+    .st-completed    { background:#f0fdf4; color:#15803d; }
+    .st-paid         { background:#f0fdf4; color:#15803d; }
+    .st-partial      { background:#fffbeb; color:#92400e; }
+    .st-pending_pay  { background:#eff6ff; color:#1e40af; }
+
+    /* ── Modal ── */
+    .modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200; align-items:center; justify-content:center; padding:16px; backdrop-filter:blur(2px); }
+    .modal-bg.open { display:flex; }
+    .modal { background:#fff; border-radius:16px; width:100%; max-width:560px; max-height:92vh; overflow-y:auto; box-shadow:0 25px 60px rgba(0,0,0,.2); }
+    .modal-header { padding:18px 22px; border-bottom:1px solid var(--gray-200); display:flex; align-items:center; justify-content:space-between; }
+    .modal-header h3 { font-size:15px; font-weight:700; color:var(--gray-900); }
+    .modal-body { padding:22px; }
+    .modal-footer { padding:14px 22px; border-top:1px solid var(--gray-200); display:flex; gap:8px; justify-content:flex-end; }
+    .modal-close-x { background:var(--gray-100); border:none; width:28px; height:28px; border-radius:6px; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; color:var(--gray-500); transition:all .15s; }
+    .modal-close-x:hover { background:var(--gray-200); color:var(--gray-800); }
+
+    /* ── Emergency row severity coloring ── */
+    .row-critical td:first-child { border-left:3px solid var(--red); }
+    .row-serious  td:first-child { border-left:3px solid #f97316; }
+    .row-moderate td:first-child { border-left:3px solid #eab308; }
+    .row-minor    td:first-child { border-left:3px solid var(--green); }
+
+    /* ── Section header ── */
+    .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; gap:12px; flex-wrap:wrap; }
+    .section-header h3 { font-size:15px; font-weight:700; color:var(--gray-900); }
+    .section-desc { font-size:12.5px; color:var(--gray-500); margin-top:2px; }
+
+    /* ── Filter bar ── */
+    .filter-bar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .search-box { position:relative; }
+    .search-box svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--gray-400); pointer-events:none; }
+    .search-box .inp { padding-left:34px; width:220px; }
+
+    /* ── Progress tracker ── */
+    .progress-track { display:flex; align-items:flex-start; gap:0; overflow-x:auto; padding:8px 0 16px; }
+    .pt-step { display:flex; flex-direction:column; align-items:center; flex:1; min-width:80px; position:relative; }
+    .pt-step:not(:last-child)::after { content:''; position:absolute; top:16px; left:calc(50% + 16px); right:calc(-50% + 16px); height:2px; background:var(--gray-200); z-index:0; }
+    .pt-step.done:not(:last-child)::after { background:var(--blue); }
+    .pt-dot { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; z-index:1; transition:all .3s; flex-shrink:0; }
+    .pt-dot.done    { background:var(--blue); color:#fff; }
+    .pt-dot.current { background:#fff; border:2.5px solid var(--blue); color:var(--blue); box-shadow:0 0 0 4px rgba(37,99,235,.15); }
+    .pt-dot.pending { background:var(--gray-100); border:2px solid var(--gray-300); color:var(--gray-400); }
+    .pt-label { font-size:10.5px; color:var(--gray-500); margin-top:6px; text-align:center; font-weight:500; max-width:72px; line-height:1.3; }
+    .pt-label.done    { color:var(--blue); font-weight:600; }
+    .pt-label.current { color:var(--gray-800); font-weight:700; }
+
+    /* ── Resource panels ── */
+    .res-tabs { display:flex; gap:4px; border-bottom:2px solid var(--gray-200); margin-bottom:20px; }
+    .res-tab { padding:10px 18px; font-size:13.5px; font-weight:500; cursor:pointer; border:none; background:none; color:var(--gray-500); border-bottom:2px solid transparent; margin-bottom:-2px; transition:all .15s; font-family:inherit; }
+    .res-tab.active { color:var(--blue); border-bottom-color:var(--blue); font-weight:600; }
+    .res-tab:hover:not(.active) { color:var(--gray-700); }
+    .res-panel { display:none; }
+    .res-panel.active { display:block; }
+
+    /* ── Gantt chart ── */
+    .gantt-wrap { overflow-x:auto; padding:8px 0; }
+    .gantt-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+    .gantt-label { font-size:12px; font-weight:600; color:var(--gray-700); width:60px; text-align:right; flex-shrink:0; }
+    .gantt-bar-wrap { flex:1; position:relative; height:28px; background:var(--gray-100); border-radius:4px; overflow:visible; min-width:300px; }
+    .gantt-block { position:absolute; height:100%; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:700; color:#fff; transition:all .3s; }
+    .gantt-tick { position:absolute; top:0; bottom:0; border-left:1px dashed var(--gray-300); pointer-events:none; }
+    .gantt-time-row { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+    .gantt-time-labels { flex:1; position:relative; height:16px; min-width:300px; }
+    .gantt-time-label { position:absolute; font-size:10px; color:var(--gray-400); transform:translateX(-50%); }
+
+    /* ── Banker's viz ── */
+    .banker-table td, .banker-table th { padding:7px 12px; text-align:center; border:1px solid var(--gray-200); font-size:12.5px; }
+    .banker-table th { background:var(--gray-50); font-weight:700; font-size:11px; }
+    .banker-safe   { background:#f0fdf4; }
+    .banker-unsafe { background:#fef2f2; }
+
+    /* ── Demo overlay ── */
+    #demo-overlay { display:none; position:fixed; inset:0; z-index:500; pointer-events:none; }
+    #demo-overlay.active { display:block; }
+    #demo-panel { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#fff; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,.25); padding:20px 24px; width:600px; max-width:calc(100vw - 32px); z-index:600; pointer-events:all; border:2px solid var(--blue); }
+    .demo-step-bar { display:flex; gap:4px; margin-bottom:14px; }
+    .demo-step-dot { flex:1; height:4px; border-radius:2px; background:var(--gray-200); transition:background .3s; }
+    .demo-step-dot.done { background:var(--blue); }
+    .demo-step-dot.current { background:#60a5fa; }
+    #demo-step-title { font-size:15px; font-weight:700; color:var(--gray-900); margin-bottom:4px; }
+    #demo-step-desc  { font-size:13px; color:var(--gray-600); line-height:1.5; }
+    .demo-controls   { display:flex; align-items:center; justify-content:space-between; margin-top:16px; }
+    .demo-step-count { font-size:12px; color:var(--gray-400); }
+    .demo-highlight  { outline:3px solid var(--blue) !important; outline-offset:4px !important; border-radius:10px !important; }
+    #btn-start-demo { background:linear-gradient(135deg,#1d4ed8,var(--blue)); color:#fff; border:none; padding:9px 20px; border-radius:9px; font-size:13.5px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:7px; transition:opacity .15s; font-family:inherit; }
+    #btn-start-demo:hover { opacity:.9; }
+
+    /* ── Emergency detail ── */
+    #page-emg-detail { display:none; }
+    #page-emg-detail.active { display:block; }
+    .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media(max-width:900px){ .detail-grid { grid-template-columns:1fr; } }
+    .detail-section { margin-bottom:20px; }
+    .detail-section h4 { font-size:12px; font-weight:700; color:var(--gray-500); text-transform:uppercase; letter-spacing:.05em; margin-bottom:12px; }
+    .detail-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--gray-100); }
+    .detail-row:last-child { border-bottom:none; }
+    .detail-key   { font-size:13px; color:var(--gray-500); }
+    .detail-value { font-size:13.5px; font-weight:600; color:var(--gray-800); text-align:right; }
+
+    /* ── Scheduling ── */
+    .algo-card { border:2px solid var(--gray-200); border-radius:var(--radius); padding:16px; cursor:pointer; transition:all .15s; }
+    .algo-card.selected { border-color:var(--blue); background:var(--blue-light); }
+    .algo-card h4 { font-size:14px; font-weight:700; color:var(--gray-800); }
+    .algo-card p  { font-size:12px; color:var(--gray-500); margin-top:2px; }
+
+    /* ── Hospital cards ── */
+    .hospital-card { background:#fff; border:1px solid var(--gray-200); border-radius:var(--radius); padding:16px; }
+    .hospital-card h4 { font-size:14px; font-weight:700; color:var(--gray-900); margin-bottom:4px; }
+    .hospital-stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+    .h-stat { background:var(--gray-50); border-radius:8px; padding:10px; text-align:center; }
+    .h-stat-val { font-size:20px; font-weight:800; }
+    .h-stat-lbl { font-size:11px; color:var(--gray-500); }
+
+    /* ── Misc ── */
+    .divider { border:none; border-top:1px solid var(--gray-100); margin:16px 0; }
+    .text-muted { color:var(--gray-400); }
+    .mono { font-family:monospace; font-size:12px; color:var(--gray-500); }
+    .flex-center { display:flex; align-items:center; justify-content:center; }
+    .gap-8 { gap:8px; }
+    .gap-12 { gap:12px; }
+    .mt-4 { margin-top:4px; }
+    .mt-8 { margin-top:8px; }
+    .mt-16 { margin-top:16px; }
+    .mb-16 { margin-bottom:16px; }
+    .mb-20 { margin-bottom:20px; }
+    .empty-state { padding:60px 20px; text-align:center; color:var(--gray-400); }
+    .empty-state svg { margin:0 auto 12px; opacity:.4; display:block; }
+    .empty-state p { font-size:14px; }
+    .empty-state span { font-size:12px; }
+    .info-banner { background:var(--blue-light); border:1px solid #bfdbfe; border-radius:8px; padding:10px 14px; font-size:12.5px; color:#1e40af; display:flex; align-items:flex-start; gap:8px; }
+  </style>
+</head>
+<body>
+<div id="loading-bar"></div>
+<div id="toast-container"></div>
+
+<!-- ═══════════ LOGIN ═══════════ -->
+<div id="login-page">
+  <div class="login-card">
+    <div class="login-logo">
+      <svg width="26" height="26" fill="none" stroke="white" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+    </div>
+    <h1>Hospital Emergency System</h1>
+    <p>Sign in to access the coordination dashboard</p>
+    <div id="login-error" style="margin-top:16px;"></div>
+    <form id="login-form" style="margin-top:22px;">
+      <div style="margin-bottom:14px;">
+        <label class="lbl">Username</label>
+        <input id="login-username" type="text" class="inp" placeholder="admin" required autocomplete="username"/>
+      </div>
+      <div style="margin-bottom:20px;">
+        <label class="lbl">Password</label>
+        <input id="login-password" type="password" class="inp" placeholder="password123" required autocomplete="current-password"/>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;" id="login-btn">Sign In</button>
+    </form>
+    <p style="text-align:center;color:var(--gray-400);font-size:12px;margin-top:14px;">Default: admin / password123</p>
+  </div>
+</div>
+
+<!-- ═══════════ APP ═══════════ -->
+<div id="app">
+  <div class="app-inner">
+
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">
+          <svg width="18" height="18" fill="none" stroke="white" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+        </div>
+        <div class="sidebar-logo-text">
+          <span>HEC System</span>
+          <span>Emergency Coordination</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">Overview</div>
+        <button class="nav-item active" data-page="dashboard">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          Dashboard
+        </button>
+
+        <div class="nav-section">Operations</div>
+        <button class="nav-item" data-page="emergencies">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          Emergencies
+          <span class="nav-badge" id="nav-active-count" style="display:none;">0</span>
+        </button>
+        <button class="nav-item" data-page="resources">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+          Resources
+        </button>
+
+        <div class="nav-section">OS Lab</div>
+        <button class="nav-item" data-page="scheduling">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          CPU Scheduling
+        </button>
+        <button class="nav-item" data-page="banker">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/></svg>
+          Banker's Algorithm
+        </button>
+        <button class="nav-item" data-page="deadlock">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+          Deadlock Detection
+        </button>
+        <button class="nav-item" data-page="starvation">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/></svg>
+          Starvation &amp; Aging
+        </button>
+        <button class="nav-item" data-page="synchronization">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+          Synchronization
+        </button>
+        <button class="nav-item" data-page="os-demo">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+          OS Lab Demo
+        </button>
+
+        <div class="nav-section">Records</div>
+        <button class="nav-item" data-page="treatment">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Treatment
+        </button>
+        <button class="nav-item" data-page="billing">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+          Billing
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button id="btn-start-demo">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Guided Demo
+        </button>
+        <div class="sidebar-user" style="margin-top:10px;">
+          <div class="user-avatar" id="user-avatar">A</div>
+          <div class="user-info">
+            <div class="user-name" id="user-display">Admin</div>
+            <div class="user-role" id="user-role">admin</div>
+          </div>
+        </div>
+        <button id="logout-btn">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          Sign out
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <div id="main-area">
+      <header id="top-header">
+        <div class="header-left">
+          <h2 id="page-title">Dashboard</h2>
+          <span class="header-subtitle" id="page-subtitle" style="display:none;"></span>
+        </div>
+        <div class="header-right">
+          <button id="refresh-btn" class="btn btn-secondary btn-sm">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            Refresh
+          </button>
+          <button id="btn-quick-emergency" class="btn btn-danger btn-sm">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            Quick Dispatch
+          </button>
+        </div>
+      </header>
+
+      <div id="page-content">
+
+        <!-- ══ DASHBOARD ══ -->
+        <div id="page-dashboard" class="page active">
+          <div class="stats-grid" id="stats-grid">
+            <div class="stat-card" onclick="navigate('emergencies')" title="View all emergencies">
+              <div class="stat-icon" style="background:#eff6ff;"><svg width="20" height="20" fill="none" stroke="#2563eb" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
+              <div class="stat-info"><div class="stat-value" id="stat-total" style="color:var(--gray-900);">–</div><div class="stat-label">Total Emergencies</div></div>
+            </div>
+            <div class="stat-card" onclick="navigate('emergencies',{status:''})" title="View active emergencies">
+              <div class="stat-icon" style="background:#fff7ed;"><svg width="20" height="20" fill="none" stroke="#f97316" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg></div>
+              <div class="stat-info"><div class="stat-value" id="stat-active" style="color:#f97316;">–</div><div class="stat-label">Active Cases</div></div>
+            </div>
+            <div class="stat-card" onclick="navigate('resources',{tab:'ambulances'})">
+              <div class="stat-icon" style="background:#f0fdf4;"><svg width="20" height="20" fill="none" stroke="#16a34a" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l1 1h1m8-1h-8m8 1a2 2 0 11-4 0m4 0a2 2 0 114 0m-6 0h6"/></svg></div>
+              <div class="stat-info"><div class="stat-value" id="stat-ambulances" style="color:#16a34a;">–</div><div class="stat-label">Ambulances Free</div></div>
+            </div>
+            <div class="stat-card" onclick="navigate('resources',{tab:'beds'})">
+              <div class="stat-icon" style="background:#eff6ff;"><svg width="20" height="20" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg></div>
+              <div class="stat-info"><div class="stat-value" id="stat-beds" style="color:#3b82f6;">–</div><div class="stat-label">Beds Available</div></div>
+            </div>
+            <div class="stat-card" onclick="navigate('resources',{tab:'doctors'})">
+              <div class="stat-icon" style="background:var(--purple-light);"><svg width="20" height="20" fill="none" stroke="var(--purple)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
+              <div class="stat-info"><div class="stat-value" id="stat-doctors" style="color:var(--purple);">–</div><div class="stat-label">Doctors Available</div></div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px;">
+            <div class="card">
+              <div class="section-header" style="margin-bottom:14px;">
+                <div><h3>Recent Emergencies</h3><p class="section-desc">Latest 10 cases across all statuses</p></div>
+                <button class="btn btn-ghost btn-sm" onclick="navigate('emergencies')">View all →</button>
+              </div>
+              <div class="tbl-wrap">
+                <table class="tbl"><thead><tr><th>ID</th><th>Patient</th><th>Severity</th><th>Status</th><th>Time</th><th></th></tr></thead>
+                <tbody id="dashboard-table"><tr class="tbl-empty"><td colspan="6">Loading…</td></tr></tbody></table>
+              </div>
+            </div>
+            <div>
+              <div class="card" style="margin-bottom:14px;">
+                <h3 style="font-size:14px;font-weight:700;color:var(--gray-900);margin-bottom:14px;">System Status</h3>
+                <div id="system-status-list" style="display:flex;flex-direction:column;gap:8px;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--gray-100);"><span style="font-size:13px;color:var(--gray-600);">C Scheduler (Member 4)</span><span id="ss-sched" class="badge">Checking…</span></div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--gray-100);"><span style="font-size:13px;color:var(--gray-600);">C++ Resource Mgr (Member 5)</span><span id="ss-res" class="badge">Checking…</span></div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;"><span style="font-size:13px;color:var(--gray-600);">Database</span><span id="ss-db" class="badge st-available">● Connected</span></div>
+                </div>
+              </div>
+              <div class="card">
+                <h3 style="font-size:14px;font-weight:700;color:var(--gray-900);margin-bottom:14px;">Quick Actions</h3>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  <button class="btn btn-danger" style="justify-content:flex-start;" id="btn-quick-emergency-dash">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    Quick Emergency Dispatch
+                  </button>
+                  <button class="btn btn-primary" style="justify-content:flex-start;" onclick="navigate('emergencies')">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                    New Emergency (Full Form)
+                  </button>
+                  <button class="btn btn-secondary" style="justify-content:flex-start;" onclick="navigate('scheduling')">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/></svg>
+                    Run Scheduling
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ EMERGENCIES ══ -->
+        <div id="page-emergencies" class="page">
+          <div class="section-header">
+            <div>
+              <h3>Emergency Cases</h3>
+              <p class="section-desc">Full lifecycle management — from request to discharge</p>
+            </div>
+            <div class="filter-bar">
+              <div class="search-box">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35"/></svg>
+                <input id="emg-search" type="text" class="inp" placeholder="Search patient…" style="width:180px;"/>
+              </div>
+              <select id="emg-filter-status" class="inp" style="width:150px;">
+                <option value="">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="admitted">Admitted</option>
+                <option value="in_treatment">In Treatment</option>
+                <option value="discharged">Discharged</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+              <button id="btn-new-emergency" class="btn btn-primary">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                New Emergency
+              </button>
+            </div>
+          </div>
+          <div class="card" style="padding:0;overflow:hidden;">
+            <div class="tbl-wrap">
+              <table class="tbl"><thead><tr>
+                <th>ID</th><th>Patient</th><th>Severity</th><th>Priority</th>
+                <th>Ambulance</th><th>Hospital</th><th>Status</th><th>Requested</th><th>Action</th>
+              </tr></thead><tbody id="emergencies-table"><tr class="tbl-empty"><td colspan="9">Loading…</td></tr></tbody></table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ EMERGENCY DETAIL ══ -->
+        <div id="page-emg-detail" class="page">
+          <div style="margin-bottom:16px;">
+            <button class="btn btn-ghost btn-sm" id="btn-back-to-emergencies" style="margin-bottom:12px;">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+              Back to Emergencies
+            </button>
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+              <div>
+                <h3 id="detail-heading" style="font-size:18px;font-weight:800;color:var(--gray-900);">Emergency E–</h3>
+                <p id="detail-patient-sub" style="font-size:13px;color:var(--gray-500);margin-top:3px;"></p>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;" id="detail-actions"></div>
+            </div>
+          </div>
+
+          <!-- Progress tracker -->
+          <div class="card" style="margin-bottom:16px;">
+            <p style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;">Emergency Lifecycle</p>
+            <div class="progress-track" id="progress-track"></div>
+          </div>
+
+          <div class="detail-grid">
+            <div>
+              <div class="card" style="margin-bottom:16px;">
+                <div class="detail-section">
+                  <h4>Patient & Emergency</h4>
+                  <div id="detail-info"></div>
+                </div>
+              </div>
+              <div class="card" style="margin-bottom:16px;">
+                <div class="detail-section">
+                  <h4>Resources Assigned</h4>
+                  <div id="detail-resources"></div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="card" style="margin-bottom:16px;">
+                <div class="detail-section">
+                  <h4>Timeline</h4>
+                  <div id="detail-timeline"></div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="detail-section">
+                  <h4>Update Status</h4>
+                  <div id="detail-update-form"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ RESOURCES ══ -->
+        <div id="page-resources" class="page">
+          <div class="section-header">
+            <div><h3>Resources</h3><p class="section-desc">Ambulances, hospitals, beds, and doctors</p></div>
+          </div>
+          <div class="res-tabs">
+            <button class="res-tab active" data-tab="ambulances">🚑 Ambulances</button>
+            <button class="res-tab" data-tab="hospitals">🏥 Hospitals</button>
+            <button class="res-tab" data-tab="beds">🛏 Beds</button>
+            <button class="res-tab" data-tab="doctors">👨‍⚕️ Doctors</button>
+          </div>
+
+          <!-- Ambulances panel -->
+          <div class="res-panel active" id="res-panel-ambulances">
+            <div class="section-header">
+              <div></div>
+              <button id="btn-new-ambulance" class="btn btn-primary btn-sm">+ Register Ambulance</button>
+            </div>
+            <div class="card" style="padding:0;overflow:hidden;margin-bottom:16px;">
+              <div class="tbl-wrap">
+                <table class="tbl"><thead><tr>
+                  <th>ID</th><th>Vehicle No.</th><th>Type</th><th>Driver</th><th>Hospital</th><th>Current Location</th><th>Status</th><th>Action</th>
+                </tr></thead><tbody id="ambulances-table"><tr class="tbl-empty"><td colspan="8">Loading…</td></tr></tbody></table>
+              </div>
+            </div>
+
+            <!-- Find Nearest Ambulance (Member 2) -->
+            <div class="card">
+              <h4 style="font-size:14px;font-weight:700;color:var(--gray-900);margin-bottom:4px;">Find Nearest Available Ambulance</h4>
+              <p style="font-size:12px;color:var(--gray-500);margin-bottom:14px;">Member 2 — Road-distance ranking using the Dehradun location matrix. Distances are illustrative demo estimates only.</p>
+              <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+                <div style="flex:1;min-width:200px;">
+                  <label class="lbl">Emergency Pickup Location *</label>
+                  <select id="find-pickup-location" class="inp" style="margin-top:6px;">
+                    <option value="">— Select pickup location —</option>
+                  </select>
+                </div>
+                <div style="min-width:160px;">
+                  <label class="lbl">Ambulance Type <span style="color:var(--gray-400);font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></label>
+                  <select id="find-amb-type" class="inp" style="margin-top:6px;">
+                    <option value="">Any type</option>
+                    <option value="Basic">Basic</option>
+                    <option value="ALS">ALS</option>
+                  </select>
+                </div>
+                <button id="btn-find-nearest" class="btn btn-primary">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l1 1h1m8-1h-8m8 1a2 2 0 11-4 0m4 0a2 2 0 114 0m-6 0h6"/></svg>
+                  Find Nearest Ambulance
+                </button>
+              </div>
+              <div id="find-nearest-result" style="display:none;"></div>
+            </div>
+          </div>
+
+          <!-- Hospitals panel -->
+          <div class="res-panel" id="res-panel-hospitals">
+            <div class="section-header" style="margin-bottom:14px;">
+              <div></div>
+              <button id="btn-new-hospital" class="btn btn-primary btn-sm">+ Add Hospital</button>
+            </div>
+            <div id="hospitals-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;"></div>
+          </div>
+
+          <!-- Beds panel -->
+          <div class="res-panel" id="res-panel-beds">
+            <div class="section-header" style="margin-bottom:14px;">
+              <div class="filter-bar">
+                <select id="bed-filter-hospital" class="inp" style="width:180px;"><option value="">All Hospitals</option></select>
+                <select id="bed-filter-type" class="inp" style="width:140px;">
+                  <option value="">All Types</option><option>ICU</option><option>General</option><option>Emergency</option>
+                </select>
+                <select id="bed-filter-status" class="inp" style="width:130px;">
+                  <option value="">All Status</option><option value="available">Available</option><option value="occupied">Occupied</option>
+                </select>
+              </div>
+              <button id="btn-new-bed" class="btn btn-primary btn-sm">+ Add Bed</button>
+            </div>
+            <div class="card" style="padding:0;overflow:hidden;">
+              <div class="tbl-wrap">
+                <table class="tbl"><thead><tr>
+                  <th>ID</th><th>Hospital</th><th>Bed No.</th><th>Type</th><th>Status</th>
+                </tr></thead><tbody id="beds-table"><tr class="tbl-empty"><td colspan="5">Loading…</td></tr></tbody></table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Doctors panel -->
+          <div class="res-panel" id="res-panel-doctors">
+            <div class="section-header" style="margin-bottom:14px;">
+              <div class="filter-bar">
+                <select id="doc-filter-hospital" class="inp" style="width:180px;"><option value="">All Hospitals</option></select>
+                <select id="doc-filter-avail" class="inp" style="width:150px;">
+                  <option value="">All Availability</option><option value="available">Available</option><option value="not_available">Not Available</option>
+                </select>
+              </div>
+              <button id="btn-new-doctor" class="btn btn-primary btn-sm">+ Add Doctor</button>
+            </div>
+            <div class="card" style="padding:0;overflow:hidden;">
+              <div class="tbl-wrap">
+                <table class="tbl"><thead><tr>
+                  <th>ID</th><th>Name</th><th>Hospital</th><th>Status</th>
+                </tr></thead><tbody id="doctors-table"><tr class="tbl-empty"><td colspan="5">Loading…</td></tr></tbody></table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ OS LAB DEMO ══ -->
+        <div id="page-os-demo" class="page">
+          <div class="section-header">
+            <div>
+              <h3>OS Lab Demo</h3>
+              <p class="section-desc">Create 2 simultaneous emergencies and watch every OS module respond in real time</p>
+            </div>
+            <button id="btn-demo-cleanup" class="btn btn-sm" style="background:#fef2f2;color:var(--red);border:1px solid #fca5a5;">
+              🗑 Clean Up Demo Data
+            </button>
+          </div>
+
+          <!-- Step indicator -->
+          <div style="display:flex;gap:0;margin-bottom:24px;border-radius:10px;overflow:hidden;border:1px solid var(--gray-200);">
+            <div class="demo-step-pill active" id="pill-1" style="flex:1;padding:10px 0;text-align:center;background:var(--blue);color:#fff;font-size:12.5px;font-weight:700;">1 · Create Emergencies</div>
+            <div class="demo-step-pill" id="pill-2" style="flex:1;padding:10px 0;text-align:center;background:var(--gray-100);color:var(--gray-400);font-size:12.5px;font-weight:700;border-left:1px solid var(--gray-200);">2 · CPU Scheduling</div>
+            <div class="demo-step-pill" id="pill-3" style="flex:1;padding:10px 0;text-align:center;background:var(--gray-100);color:var(--gray-400);font-size:12.5px;font-weight:700;border-left:1px solid var(--gray-200);">3 · Banker's Algorithm</div>
+            <div class="demo-step-pill" id="pill-4" style="flex:1;padding:10px 0;text-align:center;background:var(--gray-100);color:var(--gray-400);font-size:12.5px;font-weight:700;border-left:1px solid var(--gray-200);">4 · Deadlock Detection</div>
+            <div class="demo-step-pill" id="pill-5" style="flex:1;padding:10px 0;text-align:center;background:var(--gray-100);color:var(--gray-400);font-size:12.5px;font-weight:700;border-left:1px solid var(--gray-200);">5 · Starvation & Aging</div>
+          </div>
+
+          <!-- ── STEP 1: Create emergencies ── -->
+          <div id="os-step-1">
+            <div class="info-banner" style="margin-bottom:18px;">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Define 2–5 emergencies arriving at the same time with different severities. The OS modules will compete for shared resources — demonstrating priority scheduling, safe-state allocation, and starvation.
+            </div>
+
+            <!-- Dynamic emergency cards -->
+            <div id="demo-emg-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:14px;"></div>
+
+            <!-- Add / remove row -->
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;">
+              <button id="btn-demo-add-emg" class="btn btn-secondary btn-sm">+ Add Emergency</button>
+              <span id="demo-emg-count-label" style="font-size:12px;color:var(--gray-400);">2 emergencies</span>
+            </div>
+
+            <button id="btn-demo-create" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              Create All Emergencies Simultaneously
+            </button>
+            <div id="demo-create-result" style="display:none;margin-top:14px;"></div>
+          </div>
+
+          <!-- ── STEP 2: CPU Scheduling ── -->
+          <div id="os-step-2" style="display:none;margin-top:20px;">
+            <div class="card">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <div>
+                  <h4 style="font-size:14px;font-weight:700;color:var(--gray-900);">Step 2 — CPU Scheduling</h4>
+                  <p style="font-size:12.5px;color:var(--gray-500);margin-top:2px;">Both emergencies arrive at the same time. Priority Scheduling serves A first (critical). FCFS treats them equally. Round Robin time-slices between them.</p>
+                </div>
+                <button id="btn-demo-schedule" class="btn btn-primary btn-sm">Run Scheduling →</button>
+              </div>
+              <div id="demo-sched-result" style="display:none;"></div>
+            </div>
+          </div>
+
+          <!-- ── STEP 3: Banker's Algorithm ── -->
+          <div id="os-step-3" style="display:none;margin-top:16px;">
+            <div class="card">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <div>
+                  <h4 style="font-size:14px;font-weight:700;color:var(--gray-900);">Step 3 — Banker's Algorithm</h4>
+                  <p style="font-size:12.5px;color:var(--gray-500);margin-top:2px;">Both emergencies request a Bed and a Doctor. The C++ Banker's checks safe state for each — A gets APPROVED first, B waits or is approved from remaining resources.</p>
+                </div>
+                <button id="btn-demo-banker" class="btn btn-primary btn-sm">Run Banker's →</button>
+              </div>
+              <div id="demo-banker-result" style="display:none;"></div>
+            </div>
+          </div>
+
+          <!-- ── STEP 4: Deadlock Detection ── -->
+          <div id="os-step-4" style="display:none;margin-top:16px;">
+            <div class="card">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <div>
+                  <h4 style="font-size:14px;font-weight:700;color:var(--gray-900);">Step 4 — Deadlock Detection</h4>
+                  <p style="font-size:12.5px;color:var(--gray-500);margin-top:2px;">Builds a Resource Allocation Graph from the two emergencies. Checks for circular wait — since A and B each hold one resource and wait for the other's, a deadlock scenario is visible.</p>
+                </div>
+                <button id="btn-demo-deadlock" class="btn btn-primary btn-sm">Run Detection →</button>
+              </div>
+              <div id="demo-deadlock-result" style="display:none;"></div>
+            </div>
+          </div>
+
+          <!-- ── STEP 5: Starvation & Aging ── -->
+          <div id="os-step-5" style="display:none;margin-top:16px;">
+            <div class="card">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <div>
+                  <h4 style="font-size:14px;font-weight:700;color:var(--gray-900);">Step 5 — Starvation & Aging</h4>
+                  <p style="font-size:12.5px;color:var(--gray-500);margin-top:2px;">Emergency B (lower priority) waits in queue while A is served. After 9 ticks, aging boosts B's effective priority so it is no longer starved.</p>
+                </div>
+                <button id="btn-demo-starvation" class="btn btn-primary btn-sm">Run Simulation →</button>
+              </div>
+              <div id="demo-starv-result" style="display:none;"></div>
+            </div>
+
+            <!-- Reset -->
+            <div style="margin-top:20px;padding:16px;background:var(--gray-50);border-radius:10px;text-align:center;">
+              <p style="font-size:13px;color:var(--gray-500);margin-bottom:10px;">Demo complete! You can reset and run it again with different severities.</p>
+              <button id="btn-demo-reset" class="btn btn-secondary">↺ Reset Demo</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ CPU SCHEDULING ══ -->
+        <div id="page-scheduling" class="page">
+          <div class="section-header">
+            <div><h3>CPU Scheduling Simulation</h3><p class="section-desc">Member 4 — C Program (FCFS · Priority · Round Robin)</p></div>
+            <div id="sched-binary-badge"></div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-bottom:20px;">
+            <div class="card">
+              <h4 style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:10px;">Configuration</h4>
+
+              <!-- Quick presets -->
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+                <span style="font-size:11.5px;font-weight:600;color:var(--gray-500);line-height:30px;">Quick load:</span>
+                <button id="sched-preset-all" class="btn btn-secondary btn-sm">All Active</button>
+                <button id="sched-preset-critical" class="btn btn-sm" style="background:#fef2f2;color:var(--red);border:1px solid #fca5a5;">Critical Only</button>
+                <button id="sched-preset-rr" class="btn btn-secondary btn-sm">Round Robin Demo</button>
+              </div>
+
+              <div style="margin-bottom:14px;">
+                <label class="lbl">Algorithms</label>
+                <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px;">
+                  <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;"><input type="checkbox" id="algo-fcfs" checked style="accent-color:var(--blue);width:15px;height:15px;"> FCFS (First Come First Serve)</label>
+                  <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;"><input type="checkbox" id="algo-priority" checked style="accent-color:var(--blue);width:15px;height:15px;"> Priority Scheduling</label>
+                  <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;"><input type="checkbox" id="algo-rr" checked style="accent-color:var(--blue);width:15px;height:15px;"> Round Robin</label>
+                </div>
+              </div>
+              <div style="margin-bottom:14px;">
+                <label class="lbl">RR Time Quantum (min)</label>
+                <input id="rr-quantum" type="number" min="1" value="5" class="inp" style="width:100px;margin-top:6px;"/>
+              </div>
+              <div style="margin-bottom:18px;">
+                <label class="lbl">Emergency IDs <span style="color:var(--gray-400);font-weight:400;text-transform:none;letter-spacing:0;">(blank = all active)</span></label>
+                <input id="sched-ids" type="text" class="inp" placeholder="e.g. 1,2,3" style="margin-top:6px;"/>
+              </div>
+              <button id="run-scheduling" class="btn btn-primary" style="width:100%;justify-content:center;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Run Scheduling
+              </button>
+            </div>
+
+            <div id="scheduling-results" style="display:none;">
+              <div class="card">
+                <div style="display:flex;gap:6px;margin-bottom:18px;" id="sched-tabs">
+                  <button class="btn btn-primary btn-sm sched-tab active" data-algo="FCFS">FCFS</button>
+                  <button class="btn btn-secondary btn-sm sched-tab" data-algo="Priority">Priority</button>
+                  <button class="btn btn-secondary btn-sm sched-tab" data-algo="Round Robin">Round Robin</button>
+                </div>
+                <div id="sched-averages" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:18px;"></div>
+
+                <h4 style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Gantt Chart</h4>
+                <div id="gantt-chart" class="gantt-wrap" style="margin-bottom:18px;"></div>
+
+                <h4 style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Process Details</h4>
+                <div class="tbl-wrap">
+                  <table class="tbl"><thead><tr>
+                    <th>Process</th><th>Arrival</th><th>Burst</th><th>Completion</th><th>Waiting</th><th>Turnaround</th><th>Response</th>
+                  </tr></thead><tbody id="sched-table"></tbody></table>
+                </div>
+              </div>
+            </div>
+
+            <div id="sched-empty-hint" class="card flex-center" style="flex-direction:column;padding:40px;color:var(--gray-400);">
+              <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="opacity:.4;margin-bottom:10px;"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <p style="font-size:14px;">Configure and run algorithms to see results here</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <h4 style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:12px;">Scheduling History</h4>
+            <div class="tbl-wrap">
+              <table class="tbl"><thead><tr>
+                <th>Emergency</th><th>Algorithm</th><th>Arrival</th><th>Burst</th><th>Waiting</th><th>Turnaround</th><th>Response</th><th>Run At</th>
+              </tr></thead><tbody id="sched-log-table"><tr class="tbl-empty"><td colspan="8">No logs yet.</td></tr></tbody></table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ BANKER'S ALGORITHM ══ -->
+        <div id="page-banker" class="page">
+          <div class="section-header">
+            <div><h3>Banker's Algorithm — Resource Allocation</h3><p class="section-desc">Member 5 — C++ Deadlock Avoidance (Safe State Verification)</p></div>
+            <div id="res-binary-badge"></div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+            <div class="card">
+              <h4 style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:10px;">Request Resource</h4>
+
+              <!-- Quick presets -->
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+                <span style="font-size:11.5px;font-weight:600;color:var(--gray-500);line-height:30px;">Quick load:</span>
+                <button id="banker-preset-bed" class="btn btn-secondary btn-sm">Request Bed</button>
+                <button id="banker-preset-doc" class="btn btn-secondary btn-sm">Request Doctor</button>
+                <button id="banker-preset-amb" class="btn btn-secondary btn-sm">Request Ambulance</button>
+              </div>
+
+              <div class="info-banner" style="margin-bottom:14px;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                The C++ Banker's Algorithm checks if this allocation keeps the system in a safe state.
+              </div>
+              <div style="display:flex;flex-direction:column;gap:12px;">
+                <div><label class="lbl">Emergency ID *</label><input id="res-emergency-id" type="number" class="inp" placeholder="e.g. 1"/></div>
+                <div><label class="lbl">Resource Type *</label>
+                  <select id="res-type" class="inp">
+                    <option value="AMBULANCE">Ambulance</option>
+                    <option value="BED">Bed</option>
+                    <option value="DOCTOR">Doctor</option>
+                  </select>
+                </div>
+                <div><label class="lbl">Resource ID *</label><input id="res-resource-id" type="number" class="inp" placeholder="e.g. 1"/></div>
+                <div><label class="lbl">Hospital ID <span style="color:var(--gray-400);font-weight:400;text-transform:none;letter-spacing:0;">(for Bed/Doctor; -1 for Ambulance)</span></label><input id="res-hospital-id" type="number" class="inp" placeholder="-1"/></div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:16px;">
+                <button id="btn-request-resource" class="btn btn-primary">Request</button>
+                <button id="btn-release-resource" class="btn btn-secondary">Release</button>
+              </div>
+              <div id="res-result" style="display:none;margin-top:14px;"></div>
+            </div>
+            <div class="card">
+              <h4 style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:14px;">What is Banker's Algorithm?</h4>
+              <p style="font-size:13px;color:var(--gray-600);line-height:1.7;margin-bottom:12px;">The Banker's Algorithm (Dijkstra, 1965) prevents deadlock by ensuring each resource allocation leaves the system in a <strong>safe state</strong> — meaning there exists at least one sequence in which all processes can complete.</p>
+              <div style="background:var(--gray-50);border-radius:8px;padding:14px;font-size:12.5px;color:var(--gray-700);">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                  <div style="background:#f0fdf4;border-radius:6px;padding:10px;"><div style="color:var(--green);font-weight:700;margin-bottom:4px;">APPROVED</div><div style="font-size:12px;color:var(--gray-500);">System remains in safe state. Resource allocated.</div></div>
+                  <div style="background:#fffbeb;border-radius:6px;padding:10px;"><div style="color:var(--amber);font-weight:700;margin-bottom:4px;">WAITING</div><div style="font-size:12px;color:var(--gray-500);">Resources unavailable. Request queued.</div></div>
+                  <div style="background:#fef2f2;border-radius:6px;padding:10px;"><div style="color:var(--red);font-weight:700;margin-bottom:4px;">REJECTED</div><div style="font-size:12px;color:var(--gray-500);">Would cause unsafe state. Allocation denied.</div></div>
+                  <div style="background:var(--blue-light);border-radius:6px;padding:10px;"><div style="color:var(--blue);font-weight:700;margin-bottom:4px;">RELEASED</div><div style="font-size:12px;color:var(--gray-500);">Resource returned to available pool.</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h4 style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:12px;">Allocation Log</h4>
+            <div class="tbl-wrap">
+              <table class="tbl"><thead><tr>
+                <th>#</th><th>Emergency</th><th>Type</th><th>Resource</th><th>Decision</th><th>Reason</th><th>Time</th>
+              </tr></thead><tbody id="resources-table"><tr class="tbl-empty"><td colspan="7">Loading…</td></tr></tbody></table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ DEADLOCK DETECTION ══ -->
+        <div id="page-deadlock" class="page">
+          <div class="section-header">
+            <div><h3>Deadlock Detection</h3><p class="section-desc">Member 5 — C++ Resource Allocation Graph + DFS Cycle Detection</p></div>
+            <div id="deadlock-binary-badge"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="card">
+              <h4 style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:10px;">Build Resource Allocation Graph</h4>
+
+              <!-- Quick presets -->
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+                <span style="font-size:11.5px;font-weight:600;color:var(--gray-500);line-height:30px;">Quick load:</span>
+                <button id="btn-deadlock-preset-deadlock" class="btn btn-sm" style="background:#fef2f2;color:var(--red);border:1px solid #fca5a5;">⚠ Deadlock Scenario</button>
+                <button id="btn-deadlock-safe" class="btn btn-secondary btn-sm">✓ Safe Scenario</button>
+                <button id="btn-deadlock-clear" class="btn btn-secondary btn-sm">✕ Clear All</button>
+              </div>
+
+              <!-- Allocation Edges builder -->
+              <div style="margin-bottom:14px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                  <label class="lbl" style="margin:0;">Allocation Edges <span style="font-weight:400;color:var(--gray-400);text-transform:none;">(Resource → Emergency)</span></label>
+                  <button id="btn-dl-add-alloc" class="btn btn-secondary btn-xs">+ Add Row</button>
+                </div>
+                <div style="border:1.5px solid var(--gray-200);border-radius:8px;overflow:hidden;">
+                  <table style="width:100%;border-collapse:collapse;" id="dl-alloc-table">
+                    <thead><tr style="background:var(--gray-50);">
+                      <th style="padding:6px 10px;font-size:11px;font-weight:700;color:var(--gray-500);text-align:left;border-bottom:1px solid var(--gray-200);">From (Resource)</th>
+                      <th style="padding:6px 10px;font-size:11px;font-weight:700;color:var(--gray-500);text-align:left;border-bottom:1px solid var(--gray-200);">To (Emergency)</th>
+                      <th style="width:36px;border-bottom:1px solid var(--gray-200);"></th>
+                    </tr></thead>
+                    <tbody id="dl-alloc-rows"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Request Edges builder -->
+              <div style="margin-bottom:14px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                  <label class="lbl" style="margin:0;">Request Edges <span style="font-weight:400;color:var(--gray-400);text-transform:none;">(Emergency → Resource)</span></label>
+                  <button id="btn-dl-add-req" class="btn btn-secondary btn-xs">+ Add Row</button>
+                </div>
+                <div style="border:1.5px solid var(--gray-200);border-radius:8px;overflow:hidden;">
+                  <table style="width:100%;border-collapse:collapse;" id="dl-req-table">
+                    <thead><tr style="background:var(--gray-50);">
+                      <th style="padding:6px 10px;font-size:11px;font-weight:700;color:var(--gray-500);text-align:left;border-bottom:1px solid var(--gray-200);">From (Emergency)</th>
+                      <th style="padding:6px 10px;font-size:11px;font-weight:700;color:var(--gray-500);text-align:left;border-bottom:1px solid var(--gray-200);">To (Resource)</th>
+                      <th style="width:36px;border-bottom:1px solid var(--gray-200);"></th>
+                    </tr></thead>
+                    <tbody id="dl-req-rows"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <button id="btn-detect-deadlock" class="btn btn-primary" style="width:100%;justify-content:center;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                Run Detection
+              </button>
+              <div id="deadlock-result" style="display:none;margin-top:14px;"></div>
+            </div>
+            <div class="card">
+              <h4 style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:14px;">What is Deadlock Detection?</h4>
+              <p style="font-size:13px;color:var(--gray-600);line-height:1.7;margin-bottom:12px;">A <strong>deadlock</strong> occurs when a set of processes are each waiting for a resource held by another process in the set — creating a circular wait with no exit.</p>
+              <div style="background:var(--gray-50);border-radius:8px;padding:14px;font-size:12.5px;color:var(--gray-700);margin-bottom:12px;">
+                <div style="font-weight:700;margin-bottom:8px;">Detection Method: Resource Allocation Graph (RAG)</div>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                  <div>📌 <strong>Allocation edge:</strong> Resource → Emergency (resource is held by emergency)</div>
+                  <div>📌 <strong>Request edge:</strong> Emergency → Resource (emergency is waiting for resource)</div>
+                  <div>🔍 Run <strong>DFS</strong> on the graph — a back-edge means a cycle</div>
+                  <div>⚠️ Cycle found → <strong>DEADLOCK DETECTED</strong></div>
+                  <div>✅ No cycle → <strong>System is safe</strong></div>
+                </div>
+              </div>
+              <div style="background:var(--amber-light);border:1px solid #fde68a;border-radius:8px;padding:12px;font-size:12.5px;color:#92400e;margin-bottom:10px;">
+                <strong>Deadlock scenario:</strong> Amb-1 is held by E-1, which waits for Bed-2. Bed-2 is held by E-2, which waits for Amb-1 → circular wait → deadlock.
+              </div>
+              <div style="background:var(--gray-50);border-radius:8px;padding:12px;font-size:12.5px;color:var(--gray-600);">
+                <strong>Naming convention:</strong> Use <code style="background:var(--gray-200);padding:1px 5px;border-radius:4px;">R-Amb-1</code>, <code style="background:var(--gray-200);padding:1px 5px;border-radius:4px;">R-Bed-2</code>, <code style="background:var(--gray-200);padding:1px 5px;border-radius:4px;">R-Doc-3</code> for resources and <code style="background:var(--gray-200);padding:1px 5px;border-radius:4px;">E-1</code>, <code style="background:var(--gray-200);padding:1px 5px;border-radius:4px;">E-2</code> for emergencies.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ STARVATION & AGING ══ -->
+        <div id="page-starvation" class="page">
+          <div class="section-header">
+            <div><h3>Starvation &amp; Aging</h3><p class="section-desc">Member 5 — C++ Priority Aging Algorithm (waiting queue simulation)</p></div>
+            <div id="starvation-binary-badge"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="card">
+              <h4 style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:10px;">Simulate Waiting Queue</h4>
+
+              <!-- Quick presets -->
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+                <span style="font-size:11.5px;font-weight:600;color:var(--gray-500);line-height:30px;">Quick load:</span>
+                <button id="btn-starv-preset-starvation" class="btn btn-sm" style="background:#fffbeb;color:var(--amber);border:1px solid #fde68a;">⚠ Starvation Scenario</button>
+                <button id="btn-starv-preset-normal" class="btn btn-secondary btn-sm">✓ Normal Queue</button>
+                <button id="btn-starv-clear" class="btn btn-secondary btn-sm">✕ Clear</button>
+              </div>
+
+              <!-- Waiting requests table builder -->
+              <div style="margin-bottom:14px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                  <label class="lbl" style="margin:0;">Waiting Requests</label>
+                  <button id="btn-starv-add-row" class="btn btn-secondary btn-xs">+ Add Request</button>
+                </div>
+                <div style="border:1.5px solid var(--gray-200);border-radius:8px;overflow:hidden;">
+                  <table style="width:100%;border-collapse:collapse;" id="starv-req-table">
+                    <thead><tr style="background:var(--gray-50);">
+                      <th style="padding:6px 8px;font-size:11px;font-weight:700;color:var(--gray-500);text-align:left;border-bottom:1px solid var(--gray-200);">Emg ID</th>
+                      <th style="padding:6px 8px;font-size:11px;font-weight:700;color:var(--gray-500);text-align:left;border-bottom:1px solid var(--gray-200);">Res ID</th>
+                      <th style="padding:6px 8px;font-size:11px;font-weight:700;color:var(--gray-500);text-align:left;border-bottom:1px solid var(--gray-200);">Type</th>
+                      <th style="padding:6px 8px;font-size:11px;font-weight:700;color:var(--gray-500);text-align:left;border-bottom:1px solid var(--gray-200);">Priority</th>
+                      <th style="width:36px;border-bottom:1px solid var(--gray-200);"></th>
+                    </tr></thead>
+                    <tbody id="starv-req-rows"></tbody>
+                  </table>
+                </div>
+                <p style="font-size:11.5px;color:var(--gray-400);margin-top:4px;">Priority: 1 = Critical, 2 = Serious, 3 = Moderate, 4 = Minor</p>
+              </div>
+
+              <div style="display:flex;align-items:flex-end;gap:12px;margin-bottom:14px;">
+                <div style="flex:1;">
+                  <label class="lbl">Number of Ticks</label>
+                  <input id="starv-ticks" type="number" class="inp" value="5" min="1" max="20" style="margin-top:6px;"/>
+                  <p style="font-size:11.5px;color:var(--gray-400);margin-top:3px;">Aging kicks in every 3 ticks</p>
+                </div>
+                <button id="btn-run-starvation" class="btn btn-primary" style="flex:1;justify-content:center;margin-bottom:0;">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/></svg>
+                  Run Simulation
+                </button>
+              </div>
+              <div id="starvation-result" style="display:none;"></div>
+            </div>
+            <div class="card">
+              <h4 style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:14px;">What is Starvation &amp; Aging?</h4>
+              <p style="font-size:13px;color:var(--gray-600);line-height:1.7;margin-bottom:12px;"><strong>Starvation</strong> happens when a low-priority process waits indefinitely because high-priority processes always get resources first.</p>
+              <div style="background:var(--gray-50);border-radius:8px;padding:14px;font-size:12.5px;color:var(--gray-700);margin-bottom:12px;">
+                <div style="font-weight:700;margin-bottom:8px;">Solution: Aging</div>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                  <div>⏱ Each <strong>tick</strong> = one scheduling round passes</div>
+                  <div>📈 Every <strong>3 ticks</strong> waiting, effective priority is boosted by 1</div>
+                  <div>🔁 Queue is <strong>re-sorted</strong> after each tick</div>
+                  <div>✅ Eventually low-priority requests <strong>rise to the top</strong></div>
+                </div>
+              </div>
+              <div style="background:var(--blue-light);border:1px solid #bfdbfe;border-radius:8px;padding:12px;font-size:12.5px;color:#1e40af;margin-bottom:10px;">
+                <strong>Priority scale:</strong> 1 = Critical (highest), 4 = Minor (lowest). Aging decrements the number, increasing urgency.
+              </div>
+              <div style="background:var(--amber-light);border:1px solid #fde68a;border-radius:8px;padding:12px;font-size:12.5px;color:#92400e;">
+                <strong>Starvation scenario:</strong> Set one request to priority 4 (Minor) and run 9+ ticks — watch it age up to priority 1 (Critical) and jump the queue.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ SYNCHRONIZATION ══ -->
+        <div id="page-synchronization" class="page">
+          <div class="section-header">
+            <div><h3>Synchronization — Semaphore Demo</h3><p class="section-desc">Member 5 — C++ Semaphore with concurrent thread simulation</p></div>
+            <div id="sync-binary-badge"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="card">
+              <h4 style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:10px;">Run Semaphore Simulation</h4>
+
+              <!-- Quick presets -->
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+                <span style="font-size:11.5px;font-weight:600;color:var(--gray-500);line-height:30px;">Quick load:</span>
+                <button id="btn-sem-preset-low" class="btn btn-secondary btn-sm">Low Load (3 permits, 5 threads)</button>
+                <button id="btn-sem-preset-high" class="btn btn-sm" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;">High Load (2 permits, 20 threads)</button>
+                <button id="btn-sem-preset-exact" class="btn btn-secondary btn-sm">Exact Match (5 permits, 5 threads)</button>
+              </div>
+
+              <div class="info-banner" style="margin-bottom:14px;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Each thread simulates a patient/ambulance acquiring a shared resource. The semaphore enforces max concurrent access.
+              </div>
+              <div style="display:flex;flex-direction:column;gap:12px;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                  <div>
+                    <label class="lbl">Semaphore Permits</label>
+                    <input id="sem-permits" type="number" class="inp" value="3" min="1" max="20" style="margin-top:6px;"/>
+                    <p style="font-size:11.5px;color:var(--gray-400);margin-top:4px;">Max concurrent threads</p>
+                  </div>
+                  <div>
+                    <label class="lbl">Total Threads</label>
+                    <input id="sem-threads" type="number" class="inp" value="10" min="1" max="50" style="margin-top:6px;"/>
+                    <p style="font-size:11.5px;color:var(--gray-400);margin-top:4px;">Total requests to simulate</p>
+                  </div>
+                </div>
+                <button id="btn-run-semaphore" class="btn btn-primary" style="width:100%;justify-content:center;">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/></svg>
+                  Run Simulation
+                </button>
+                <div id="semaphore-result" style="display:none;"></div>
+              </div>
+            </div>
+            <div class="card">
+              <h4 style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:14px;">What is a Semaphore?</h4>
+              <p style="font-size:13px;color:var(--gray-600);line-height:1.7;margin-bottom:12px;">A <strong>semaphore</strong> is a synchronization primitive that controls access to a shared resource by maintaining a counter of available permits.</p>
+              <div style="background:var(--gray-50);border-radius:8px;padding:14px;font-size:12.5px;color:var(--gray-700);margin-bottom:12px;">
+                <div style="font-weight:700;margin-bottom:8px;">Operations</div>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                  <div>🔒 <strong>acquire()</strong> — decrements permits; blocks if 0</div>
+                  <div>🔓 <strong>release()</strong> — increments permits; unblocks a waiter</div>
+                  <div>📊 Peak concurrent = max threads inside critical section at once</div>
+                  <div>✅ Peak should never exceed the permit count</div>
+                </div>
+              </div>
+              <div style="background:var(--green-light);border:1px solid #bbf7d0;border-radius:8px;padding:12px;font-size:12.5px;color:#14532d;margin-bottom:10px;">
+                <strong>Hospital context:</strong> A semaphore with 3 permits = max 3 ambulances can simultaneously access the dispatch system, preventing race conditions.
+              </div>
+              <div style="background:var(--gray-50);border-radius:8px;padding:12px;font-size:12.5px;color:var(--gray-600);">
+                <strong>What to expect:</strong> Peak Concurrent ≤ Permits = ✓ semaphore working correctly. If it were to exceed the permits, it would signal a bug in the synchronization logic.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ TREATMENT ══ -->
+        <div id="page-treatment" class="page">
+          <div class="section-header">
+            <div><h3>Treatment Records</h3><p class="section-desc">Medical diagnoses and treatment notes</p></div>
+            <button id="btn-new-treatment" class="btn btn-primary">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+              Add Treatment
+            </button>
+          </div>
+          <div class="card" style="padding:0;overflow:hidden;">
+            <div class="tbl-wrap">
+              <table class="tbl"><thead><tr>
+                <th>ID</th><th>Patient</th><th>Doctor</th><th>Diagnosis</th><th>Status</th><th>Started</th>
+              </tr></thead><tbody id="treatments-table"><tr class="tbl-empty"><td colspan="6">Loading…</td></tr></tbody></table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ BILLING ══ -->
+        <div id="page-billing" class="page">
+          <div class="section-header">
+            <div><h3>Billing & Payments</h3><p class="section-desc">Bills and payment records for emergency cases</p></div>
+            <div style="display:flex;gap:8px;">
+              <button id="btn-new-bill" class="btn btn-secondary btn-sm">+ New Bill</button>
+              <button id="btn-new-payment" class="btn btn-primary btn-sm">+ Record Payment</button>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div>
+              <h4 style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:10px;">Bills</h4>
+              <div class="card" style="padding:0;overflow:hidden;">
+                <div class="tbl-wrap">
+                  <table class="tbl"><thead><tr>
+                    <th>ID</th><th>Patient</th><th>Amount</th><th>Date</th><th>Status</th>
+                  </tr></thead><tbody id="bills-table"><tr class="tbl-empty"><td colspan="5">Loading…</td></tr></tbody></table>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4 style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:10px;">Payments</h4>
+              <div class="card" style="padding:0;overflow:hidden;">
+                <div class="tbl-wrap">
+                  <table class="tbl"><thead><tr>
+                    <th>ID</th><th>Bill</th><th>Amount</th><th>Mode</th><th>Date</th>
+                  </tr></thead><tbody id="payments-table"><tr class="tbl-empty"><td colspan="5">Loading…</td></tr></tbody></table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /page-content -->
+    </div><!-- /main-area -->
+  </div>
+</div>
+
+<!-- ═══ DEMO OVERLAY ═══ -->
+<div id="demo-overlay">
+  <div id="demo-panel">
+    <div class="demo-step-bar" id="demo-step-bar"></div>
+    <div style="font-size:11px;color:var(--blue);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;" id="demo-step-num"></div>
+    <div id="demo-step-title"></div>
+    <div id="demo-step-desc" style="margin-top:6px;"></div>
+    <div class="demo-controls">
+      <button id="demo-exit" class="btn btn-secondary btn-sm">✕ Exit Demo</button>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="demo-step-count" id="demo-count"></span>
+        <button id="demo-prev" class="btn btn-secondary btn-sm">← Back</button>
+        <button id="demo-next" class="btn btn-primary btn-sm">Next →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- Add Hospital Modal -->
+<div class="modal-bg" id="modal-hospital">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header">
+      <h3 id="modal-hospital-title">Add Hospital</h3>
+      <button class="modal-close-x" data-modal="modal-hospital">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="full">
+          <label class="lbl">Hospital Name *</label>
+          <input id="hosp-name" type="text" class="inp" placeholder="e.g. AIIMS Rishikesh"/>
+        </div>
+        <div class="full">
+          <label class="lbl">Location</label>
+          <select id="hosp-location" class="inp"><option value="">— Select location —</option></select>
+        </div>
+        <div>
+          <label class="lbl">Total Beds</label>
+          <input id="hosp-total-beds" type="number" class="inp" min="0" placeholder="0"/>
+        </div>
+        <div>
+          <label class="lbl">Available Beds</label>
+          <input id="hosp-avail-beds" type="number" class="inp" min="0" placeholder="0"/>
+        </div>
+        <div>
+          <label class="lbl">Emergency Capacity</label>
+          <input id="hosp-emg-cap" type="number" class="inp" min="0" placeholder="0"/>
+        </div>
+        <div>
+          <label class="lbl">Status</label>
+          <select id="hosp-status" class="inp">
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+            <option value="Full">Full</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-hospital')">Cancel</button>
+      <button id="submit-hospital" class="btn btn-primary">Save Hospital</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Bed Modal -->
+<div class="modal-bg" id="modal-bed">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <h3 id="modal-bed-title">Add Bed</h3>
+      <button class="modal-close-x" data-modal="modal-bed">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="full">
+          <label class="lbl">Hospital *</label>
+          <select id="bed-hospital" class="inp"><option value="">— Select Hospital —</option></select>
+        </div>
+        <div>
+          <label class="lbl">Bed Number *</label>
+          <input id="bed-number" type="text" class="inp" placeholder="e.g. B-101"/>
+        </div>
+        <div>
+          <label class="lbl">Bed Type *</label>
+          <select id="bed-type" class="inp">
+            <option value="General">General</option>
+            <option value="ICU">ICU</option>
+            <option value="Emergency">Emergency</option>
+          </select>
+        </div>
+        <div class="full">
+          <label class="lbl">Status</label>
+          <select id="bed-status" class="inp">
+            <option value="available">Available</option>
+            <option value="occupied">Occupied</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-bed')">Cancel</button>
+      <button id="submit-bed" class="btn btn-primary">Save Bed</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Doctor Modal -->
+<div class="modal-bg" id="modal-doctor">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <h3 id="modal-doctor-title">Add Doctor</h3>
+      <button class="modal-close-x" data-modal="modal-doctor">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="full">
+          <label class="lbl">Full Name *</label>
+          <input id="doc-name" type="text" class="inp" placeholder="e.g. Dr. Anita Sharma"/>
+        </div>
+        <div class="full">
+          <label class="lbl">Hospital *</label>
+          <select id="doc-hospital" class="inp"><option value="">— Select Hospital —</option></select>
+        </div>
+        <div class="full">
+          <label class="lbl">Availability</label>
+          <select id="doc-avail" class="inp">
+            <option value="available">Available</option>
+            <option value="not_available">Not Available</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-doctor')">Cancel</button>
+      <button id="submit-doctor" class="btn btn-primary">Save Doctor</button>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Emergency -->
+<div class="modal-bg" id="modal-quick-emergency">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header" style="background:linear-gradient(135deg,#b91c1c,#ef4444);border-radius:16px 16px 0 0;">
+      <h3 style="color:#fff;display:flex;align-items:center;gap:8px;">
+        <svg width="16" height="16" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        Quick Emergency Dispatch
+      </h3>
+      <button class="modal-close-x" data-modal="modal-quick-emergency" style="background:rgba(255,255,255,.2);color:#fff;">✕</button>
+    </div>
+    <div class="modal-body" id="qe-form-body">
+      <p style="font-size:13px;color:var(--gray-500);margin-bottom:18px;">Auto-assigns the nearest ambulance, a hospital, bed, and doctor based on availability.</p>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div>
+          <label class="lbl">Patient Name *</label>
+          <input id="qe-name" type="text" class="inp" placeholder="Enter patient's full name"/>
+          <div class="field-error" id="qe-name-err" style="display:none;"></div>
+        </div>
+        <div>
+          <label class="lbl">Pickup Location *</label>
+          <select id="qe-location" class="inp">
+            <option value="">Loading locations…</option>
+          </select>
+          <div class="field-error" id="qe-loc-err" style="display:none;"></div>
+        </div>
+        <div>
+          <label class="lbl">Severity *</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;" id="qe-severity-btns">
+            <button type="button" class="qe-sev-btn" data-sev="critical" style="padding:12px;border-radius:10px;border:2px solid #fca5a5;background:#fef2f2;color:#b91c1c;font-weight:700;font-size:13px;cursor:pointer;transition:all .15s;font-family:inherit;">🔴 Critical</button>
+            <button type="button" class="qe-sev-btn" data-sev="serious"  style="padding:12px;border-radius:10px;border:2px solid #fed7aa;background:#fff7ed;color:#c2410c;font-weight:700;font-size:13px;cursor:pointer;transition:all .15s;font-family:inherit;">🟠 Serious</button>
+            <button type="button" class="qe-sev-btn" data-sev="moderate" style="padding:12px;border-radius:10px;border:2px solid #fde68a;background:#fffbeb;color:#92400e;font-weight:700;font-size:13px;cursor:pointer;transition:all .15s;font-family:inherit;">🟡 Moderate</button>
+            <button type="button" class="qe-sev-btn" data-sev="minor"    style="padding:12px;border-radius:10px;border:2px solid #bbf7d0;background:#f0fdf4;color:#15803d;font-weight:700;font-size:13px;cursor:pointer;transition:all .15s;font-family:inherit;">🟢 Minor</button>
+          </div>
+          <input type="hidden" id="qe-severity"/>
+          <div class="field-error" id="qe-sev-err" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-body" id="qe-result-body" style="display:none;"></div>
+    <div class="modal-footer" id="qe-footer">
+      <button class="btn btn-secondary" data-modal="modal-quick-emergency" onclick="closeModal('modal-quick-emergency')">Cancel</button>
+      <button id="submit-quick-emergency" class="btn btn-danger">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        Dispatch Now
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- New Emergency (full form) -->
+<div class="modal-bg" id="modal-emergency">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>New Emergency Request</h3>
+      <button class="modal-close-x" data-modal="modal-emergency">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div>
+          <label class="lbl">Patient *</label>
+          <select id="emg-patient" class="inp"><option value="">— Select Patient —</option></select>
+        </div>
+        <div>
+          <label class="lbl">Hospital *</label>
+          <select id="emg-hospital" class="inp"><option value="">— Select Hospital —</option></select>
+        </div>
+        <div>
+          <label class="lbl">Severity *</label>
+          <select id="emg-severity" class="inp">
+            <option value="">— Select —</option>
+            <option value="critical">🔴 Critical</option>
+            <option value="serious">🟠 Serious</option>
+            <option value="moderate">🟡 Moderate</option>
+            <option value="minor">🟢 Minor</option>
+          </select>
+        </div>
+        <div>
+          <label class="lbl">Priority <span style="color:var(--gray-400);font-weight:400;text-transform:none;letter-spacing:0;">(auto)</span></label>
+          <input id="emg-priority" type="number" min="1" max="5" class="inp" placeholder="Auto from severity" readonly/>
+        </div>
+        <div class="full">
+          <label class="lbl">Emergency Pickup Location *</label>
+          <select id="emg-pickup-location" class="inp">
+            <option value="">— Select pickup location —</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal="modal-emergency" onclick="closeModal('modal-emergency')">Cancel</button>
+      <button id="submit-emergency" class="btn btn-primary">Submit Emergency</button>
+    </div>
+  </div>
+</div>
+
+<!-- Register / Edit Ambulance -->
+<div class="modal-bg" id="modal-ambulance">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-ambulance-title">Register Ambulance</h3>
+      <button class="modal-close-x" data-modal="modal-ambulance">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="amb-edit-id" value=""/>
+      <div class="form-grid">
+        <div><label class="lbl">Vehicle Number *</label><input id="amb-reg" type="text" class="inp" placeholder="e.g. UK07A1001"/></div>
+        <div><label class="lbl">Type</label>
+          <select id="amb-type" class="inp">
+            <option value="">— Select Type —</option>
+            <option value="Basic">Basic</option>
+            <option value="ALS">ALS</option>
+          </select>
+        </div>
+        <div><label class="lbl">Driver Name *</label><input id="amb-driver" type="text" class="inp"/></div>
+        <div><label class="lbl">Driver License</label><input id="amb-license" type="text" class="inp"/></div>
+        <div class="full"><label class="lbl">Hospital *</label><select id="amb-hospital" class="inp"><option value="">— Select Hospital —</option></select></div>
+        <div class="full">
+          <label class="lbl">Current Location (Dehradun) *</label>
+          <select id="amb-location" class="inp">
+            <option value="">— Select Location —</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal="modal-ambulance" onclick="closeModal('modal-ambulance')">Cancel</button>
+      <button id="submit-ambulance" class="btn btn-primary">Save Ambulance</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Treatment -->
+<div class="modal-bg" id="modal-treatment">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add Treatment Record</h3>
+      <button class="modal-close-x" data-modal="modal-treatment">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div><label class="lbl">Emergency ID *</label><input id="treat-emergency" type="number" class="inp"/></div>
+        <div><label class="lbl">Doctor *</label><select id="treat-doctor" class="inp"><option value="">— Select Doctor —</option></select></div>
+        <div><label class="lbl">Diagnosis</label><input id="treat-diagnosis" type="text" class="inp"/></div>
+        <div><label class="lbl">Status</label>
+          <select id="treat-status" class="inp">
+            <option value="pending">Pending</option>
+            <option value="ongoing">Ongoing</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div class="full"><label class="lbl">Treatment Notes</label><textarea id="treat-notes" class="inp" rows="3" style="resize:vertical;"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal="modal-treatment" onclick="closeModal('modal-treatment')">Cancel</button>
+      <button id="submit-treatment" class="btn btn-primary">Save Record</button>
+    </div>
+  </div>
+</div>
+
+<!-- Create Bill -->
+<div class="modal-bg" id="modal-bill">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header"><h3>Create Bill</h3><button class="modal-close-x" data-modal="modal-bill">✕</button></div>
+    <div class="modal-body">
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div><label class="lbl">Emergency ID *</label><input id="bill-emergency" type="number" class="inp"/></div>
+        <div><label class="lbl">Patient ID *</label><input id="bill-patient" type="number" class="inp"/></div>
+        <div><label class="lbl">Amount (₹) *</label><input id="bill-amount" type="number" step="0.01" class="inp"/></div>
+        <div><label class="lbl">Date *</label><input id="bill-date" type="date" class="inp"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-bill')">Cancel</button>
+      <button id="submit-bill" class="btn btn-primary">Create Bill</button>
+    </div>
+  </div>
+</div>
+
+<!-- Record Payment -->
+<div class="modal-bg" id="modal-payment">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header"><h3>Record Payment</h3><button class="modal-close-x" data-modal="modal-payment">✕</button></div>
+    <div class="modal-body">
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div><label class="lbl">Bill ID *</label><input id="pay-bill" type="number" class="inp"/></div>
+        <div><label class="lbl">Amount (₹) *</label><input id="pay-amount" type="number" step="0.01" class="inp"/></div>
+        <div><label class="lbl">Date *</label><input id="pay-date" type="date" class="inp"/></div>
+        <div><label class="lbl">Payment Mode *</label>
+          <select id="pay-mode" class="inp">
+            <option value="Cash">Cash</option><option value="UPI">UPI</option><option value="Card">Card</option><option value="Net Banking">Net Banking</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-payment')">Cancel</button>
+      <button id="submit-payment" class="btn btn-primary">Record Payment</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
